@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SheetDB ဒေတာကြည့်ရှုရေး - အီးမေးလ်နှင့် စကားဝှက်များ</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(145deg, #f0f4fa 0%, #e2e8f0 100%);
+            font-family: 'Segoe UI', 'Inter', system-ui, -apple-system, 'Roboto', 'Noto Sans Myanmar', sans-serif;
+            padding: 2rem 1.5rem;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .dashboard {
+            max-width: 1300px;
+            width: 100%;
+            margin: 0 auto;
+            background: rgba(255,255,255,0.75);
+            backdrop-filter: blur(2px);
+            border-radius: 2rem;
+            box-shadow: 0 25px 45px -12px rgba(0,0,0,0.25), 0 1px 2px rgba(0,0,0,0.05);
+            overflow: hidden;
+        }
+
+        .header {
+            background: white;
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid rgba(0,0,0,0.08);
+        }
+
+        .title-section h1 {
+            font-size: 1.8rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #1E2A3E, #0f172a);
+            background-clip: text;
+            -webkit-background-clip: text;
+            color: transparent;
+            letter-spacing: -0.3px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .title-section h1::before {
+            content: "🔐";
+            font-size: 1.8rem;
+            background: none;
+            -webkit-background-clip: unset;
+            color: #2c3e66;
+        }
+
+        .sub {
+            color: #4b5563;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .badge {
+            background: #eef2ff;
+            padding: 0.25rem 0.85rem;
+            border-radius: 40px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            color: #1e3a8a;
+            font-family: monospace;
+            word-break: break-all;
+        }
+
+        .refresh-btn {
+            background: #1e293b;
+            border: none;
+            color: white;
+            padding: 0.4rem 1.2rem;
+            border-radius: 60px;
+            font-weight: 500;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+
+        .refresh-btn:hover {
+            background: #0f172a;
+            transform: scale(0.97);
+        }
+
+        .stats {
+            background: #f8fafc;
+            padding: 0.8rem 2rem;
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            border-bottom: 1px solid #e2e8f0;
+            color: #334155;
+        }
+
+        .table-wrapper {
+            padding: 0 1.5rem 2rem 1.5rem;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 1.5rem;
+            overflow: hidden;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.03);
+            font-size: 0.95rem;
+        }
+
+        th {
+            background-color: #f1f5f9;
+            color: #0f172a;
+            font-weight: 600;
+            padding: 1rem 1.2rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+            font-size: 0.9rem;
+        }
+
+        td {
+            padding: 0.9rem 1.2rem;
+            border-bottom: 1px solid #f0f2f5;
+            color: #1e293b;
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr:hover td {
+            background-color: #fefce8;
+            transition: 0.1s;
+        }
+
+        .email-cell {
+            font-family: 'SF Mono', 'Fira Code', monospace;
+            font-weight: 500;
+            color: #075985;
+        }
+
+        .password-cell {
+            font-family: monospace;
+            letter-spacing: 0.3px;
+            background: #fef9e3;
+            display: inline-block;
+            padding: 0.2rem 0.7rem;
+            border-radius: 30px;
+            font-weight: 500;
+            color: #92400e;
+        }
+
+        .loading-state, .error-state, .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            background: white;
+            border-radius: 1.5rem;
+            margin: 1rem 0;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #1e293b;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .error-state {
+            color: #b91c1c;
+            background: #fee2e2;
+        }
+
+        footer {
+            padding: 1rem 2rem 1.5rem;
+            text-align: center;
+            font-size: 0.75rem;
+            color: #5b6e8c;
+            border-top: 1px solid #e9edf2;
+            background: white;
+        }
+
+        @media (max-width: 640px) {
+            body {
+                padding: 1rem;
+            }
+            th, td {
+                padding: 0.7rem 0.8rem;
+            }
+            .header {
+                padding: 1rem 1.2rem;
+            }
+            .title-section h1 {
+                font-size: 1.4rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+<div class="dashboard">
+    <div class="header">
+        <div class="title-section">
+            <h1>SheetDB အချက်အလက်ဘုတ်</h1>
+            <div class="sub">
+                <span>📋 အီးမေးလ်နှင့် စကားဝှက်များ တိုက်ရိုက်ဖတ်ရှုရန်</span>
+                <span class="badge">API: sheetdb.io/v1/yjypmiqsjieg7</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="stats" id="statsArea">
+        <span>📊 စာရင်းအင်း: ဖွင့်နေသည်...</span>
+        <button class="refresh-btn" id="refreshDataBtn">⟳ ဒေတာအသစ်ပြန်လည်ရယူရန်</button>
+    </div>
+
+    <div class="table-wrapper" id="tableContainer">
+        <div class="loading-state">
+            <div class="spinner"></div>
+            <p style="margin-top: 1rem; color: #475569;">SheetDB မှ အချက်အလက်များ ယူဆောင်နေပါသည်...</p>
+        </div>
+    </div>
+    <footer>
+        ⚡ ဤဒေတာသည် Google Sheets (SheetDB API) မှ တိုက်ရိုက်ရယူထားသည် | အီးမေးလ်နှင့် စကားဝှက်အားလုံးကို ပြသထားသည်။
+    </footer>
+</div>
+
+<script>
+    const API_URL = 'https://sheetdb.io/api/v1/yjypmiqsjieg7';
+
+    const tableContainer = document.getElementById('tableContainer');
+    const statsArea = document.getElementById('statsArea');
+    const refreshBtn = document.getElementById('refreshDataBtn');
+
+    function updateStats(dataArray) {
+        if (!statsArea) return;
+        const total = Array.isArray(dataArray) ? dataArray.length : 0;
+        const validCount = Array.isArray(dataArray) ? dataArray.filter(row => row && (row.email || row.password)).length : 0;
+        statsArea.innerHTML = `
+            <span>📊 စာရင်းအင်း: စုစုပေါင်း <strong style="color:#0f172a">${total}</strong> ကြောင်း | မှတ်တမ်းဝင် ${validCount} ခု</span>
+            <button class="refresh-btn" id="refreshDataBtn">⟳ ဒေတာအသစ်ပြန်လည်ရယူရန်</button>
+        `;
+        const newRefreshBtn = document.getElementById('refreshDataBtn');
+        if (newRefreshBtn) {
+            newRefreshBtn.addEventListener('click', () => fetchAndRenderData(true));
+        }
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;');
+    }
+
+    function renderTable(data) {
+        if (!tableContainer) return;
+        
+        if (!Array.isArray(data) || data.length === 0) {
+            tableContainer.innerHTML = `<div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 0.5rem;">📭</div>
+                <h3 style="font-weight: 500;">အချက်အလက်မရှိသေး</h3>
+                <p style="margin-top: 8px; color: #5b6e8c;">API မှ ဗလာပြန်လာသည် သို့မဟုတ် ဇယားတွင် အကြောင်းအရာမရှိပါ။</p>
+            </div>`;
+            return;
+        }
+
+        const rows = data.filter(row => row !== null && typeof row === 'object');
+        
+        if (rows.length === 0) {
+            tableContainer.innerHTML = `<div class="empty-state"><div style="font-size: 3rem;">⚠️</div><p>အလုပ်လုပ်သော ဒေတာအတန်း မတွေ့ရှိပါ</p></div>`;
+            return;
+        }
+
+        let tableHtml = `
+            <table>
+                <thead>
+                    <tr>
+                        <th>📧 အီးမေးလ် (Email)</th>
+                        <th>🔑 စကားဝှက် (Password)</th>
+                        <th>📛 အမည်အပြည့် (fullname / မှတ်စု)</th>
+                    </tr>
+                </thead>
+                <tbody>
+        `;
+        
+        for (let i = 0; i < rows.length; i++) {
+            const item = rows[i];
+            const email = (item.email !== undefined && item.email !== null) ? String(item.email) : '';
+            const password = (item.password !== undefined && item.password !== null) ? String(item.password) : '';
+            const fullname = (item.fullname !== undefined && item.fullname !== null) ? String(item.fullname) : '';
+            
+            const displayEmail = email.trim() === '' ? '—' : email;
+            const displayPassword = password.trim() === '' ? '—' : password;
+            const displayFullname = fullname.trim() === '' ? '—' : fullname;
+            
+            const passwordFormatted = `<span class="password-cell">${escapeHtml(displayPassword)}</span>`;
+            
+            tableHtml += `
+                <tr>
+                    <td class="email-cell">${escapeHtml(displayEmail)}</td>
+                    <td>${passwordFormatted}</td>
+                    <td style="color:#475569;">${escapeHtml(displayFullname)}</td>
+                </tr>
+            `;
+        }
+        
+        tableHtml += `
+                </tbody>
+            </table>
+        `;
+        
+        tableContainer.innerHTML = tableHtml;
+    }
+
+    function showLoading() {
+        if (tableContainer) {
+            tableContainer.innerHTML = `<div class="loading-state">
+                <div class="spinner"></div>
+                <p style="margin-top: 1rem;">SheetDB မှ အချက်အလက်များ ထပ်တူပြုနေသည်...</p>
+            </div>`;
+        }
+        if (statsArea && !statsArea.innerHTML.includes("ဒေတာအသစ်ပြန်လည်ရယူရန်")) {
+            statsArea.innerHTML = `
+                <span>⏳ ဖွင့်နေသည်...</span>
+                <button class="refresh-btn" id="refreshDataBtn">⟳ ဒေတာအသစ်ပြန်လည်ရယူရန်</button>
+            `;
+            const newBtn = document.getElementById('refreshDataBtn');
+            if (newBtn) newBtn.addEventListener('click', () => fetchAndRenderData(true));
+        } else if (statsArea) {
+            const statSpan = statsArea.querySelector('span:first-child');
+            if (statSpan) statSpan.innerHTML = `⏳ နောက်ဆုံးဒေတာ ရယူနေသည်...`;
+        }
+    }
+
+    function showError(message) {
+        if (tableContainer) {
+            tableContainer.innerHTML = `<div class="error-state">
+                <div style="font-size: 2rem;">⚠️</div>
+                <strong>ဒေတာရယူရန် မအောင်မြင်ပါ</strong><br>
+                <span style="font-size: 0.85rem;">${escapeHtml(message)}</span>
+                <div style="margin-top: 16px;">
+                    <button id="retryErrorBtn" style="background:#1e293b; border:none; color:white; padding:6px 18px; border-radius:60px; cursor:pointer;">ပြန်ကြိုးစားမည်</button>
+                </div>
+            </div>`;
+            const retryBtn = document.getElementById('retryErrorBtn');
+            if (retryBtn) retryBtn.addEventListener('click', () => fetchAndRenderData(true));
+        }
+        if (statsArea) {
+            const statSpan = statsArea.querySelector('span:first-child');
+            if (statSpan) statSpan.innerHTML = `❌ တောင်းဆိုမှု မအောင်မြင်၊ ပြန်စမ်းပါ`;
+        }
+    }
+
+    async function fetchAndRenderData(showLoaderFeedback = true) {
+        if (showLoaderFeedback) {
+            showLoading();
+        } else {
+            if (tableContainer && !tableContainer.innerHTML.includes('loading-state')) {
+                tableContainer.innerHTML = `<div class="loading-state"><div class="spinner"></div><p>ဒေတာ အပ်ဒိတ်လုပ်နေသည်...</p></div>`;
+            }
+        }
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            
+            const response = await fetch(API_URL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                },
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const rawData = await response.json();
+            
+            let dataArray = [];
+            if (Array.isArray(rawData)) {
+                dataArray = rawData;
+            } else if (rawData && typeof rawData === 'object') {
+                if (Array.isArray(rawData.data)) dataArray = rawData.data;
+                else dataArray = [rawData];
+            } else {
+                dataArray = [];
+            }
+            
+            updateStats(dataArray);
+            renderTable(dataArray);
+            
+        } catch (err) {
+            console.error("SheetDB ရယူမှုအမှား:", err);
+            let errorMsg = "ဒေတာရင်းမြစ်သို့ ချိတ်ဆက်မရပါ။";
+            if (err.name === 'AbortError') {
+                errorMsg = "တောင်းဆိုချက် အချိန်ကုန်သွားသည်။ ကွန်ရက်ကို စစ်ဆေးပြီး နောက်မှပြန်ကြိုးစားပါ။";
+            } else if (err.message) {
+                errorMsg = err.message;
+            }
+            showError(errorMsg);
+            if (statsArea) {
+                statsArea.innerHTML = `<span>⚠️ ဖွင့်မရခြင်း: ${escapeHtml(errorMsg.substring(0, 60))}</span>
+                                        <button class="refresh-btn" id="refreshDataBtn">⟳ ပြန်ကြိုးစားမည်</button>`;
+                const failBtn = document.getElementById('refreshDataBtn');
+                if (failBtn) failBtn.addEventListener('click', () => fetchAndRenderData(true));
+            }
+        }
+    }
+
+    function init() {
+        fetchAndRenderData(true);
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => fetchAndRenderData(true));
+        }
+        document.body.addEventListener('click', (e) => {
+            if (e.target && (e.target.id === 'refreshDataBtn' || e.target.closest('#refreshDataBtn'))) {
+                const btn = e.target.id === 'refreshDataBtn' ? e.target : e.target.closest('#refreshDataBtn');
+                if (btn) {
+                    e.preventDefault();
+                    fetchAndRenderData(true);
+                }
+            }
+        });
+    }
+
+    init();
+</script>
+</body>
+</html>
